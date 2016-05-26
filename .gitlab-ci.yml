@@ -4,4 +4,4 @@ deploy:
     - cp -rf ../chat /alidata/www/yeyuanfeng
     - cd /alidata/www/yeyuanfeng/chat
     - npm install
-    - forever stop app.js || forever start app.js
+    - forever restart app.js || forever start app.js
