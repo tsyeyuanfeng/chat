@@ -7,19 +7,24 @@ var clients = [];
 server.on('request', function(request, response) {
     var url = require('url').parse(request.url);
 
+    //返回用户UI
     if(url.pathname == '/') {
-
-        var clientUI = require('fs').readFileSync("index.html");
+        var ui = require('fs').readFileSync("index.html");
 
         response.writeHead(200, {"Content-Type": "text/html"});
-        response.write(clientUI);
+        response.write(ui);
         response.end();
         return;
     }
 
+    if(url.pathname != '/chat') {
+        response.writeHead(404);
+        response.end();
+    }
 
     if(url.pathname == '/chat') {
-        if(request.method == 'POST') {
+
+        if(request.method == 'POST') { //用户发送消息
 
             var body = '';
             request.on('data', function(chunk) {
@@ -37,19 +42,19 @@ server.on('request', function(request, response) {
                     client.end();
                 })
 
+                //清空所有长连接
                 clients = [];
             })
         }
-        else if(request.method == 'GET') {
+        else if(request.method == 'GET') { //用户建立长连接
             response.writeHead(200);
             clients.push(response);
-            console.log(clients.length);
+
             request.on('end', function() {
                 clients.splice(clients.indexOf(response), 1);
             })
         }
     }
-
 });
 
 server.listen(3030);

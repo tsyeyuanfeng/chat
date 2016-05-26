@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
     <title>聊天室</title>
 
     <style>
@@ -12,11 +13,24 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
 
-        .container {
-            display: block;
-            width: 400px;
-            margin: 0 auto;
+        @media screen and (min-width: 786px) {
+            .container {
+                display: block;
+                width: 400px;
+                margin: 0 auto;
+            }
+        }
+
+        @media screen and (max-width: 786px) {
+            .container {
+                display: block;
+                margin: 10px;
+            }
         }
 
         .btn-start {
@@ -37,6 +51,7 @@
             transform: translate(-50%, -50%);
 
             color: #fff;
+            font-size: 16px;
             cursor: pointer;
         }
 
@@ -88,6 +103,8 @@
 
             font-size: 13px;
             line-height: 16px;
+            word-break: break-all;
+
         }
 
         .message-box .message-item.left .message {
@@ -120,7 +137,7 @@
         }
 
         .message-box .message-item.right .message:before {
-            right: 0px;
+            right: 0;
             border: 1px solid rgb(167, 235, 102);
             transform: translate(50%, -50%) rotate(45deg);
             background: rgb(167, 235, 102);
@@ -148,17 +165,25 @@
             this.container = container;
         }
 
-        Chat.prototype.init = function() {
+        /**
+         * 启动应用
+         */
+        Chat.prototype.startup = function() {
             var username = window.localStorage.getItem('username');
+
             if(!username)
-                this.initGuidePage();
+                this.__showStartPage();
             else {
                 this.username = username;
-                this.initChatBox();
+                this.__showChatBox();
             }
-        }
+        };
 
-        Chat.prototype.initGuidePage = function() {
+        /**
+         * 显示开始页面
+         * @private
+         */
+        Chat.prototype.__showStartPage = function() {
             var btn = document.createElement('button');
             btn.className = 'btn-start';
             btn.innerHTML = '进入聊天室';
@@ -169,15 +194,21 @@
                     alert('用户名不能为空');
                     return false;
                 }
+
                 window.localStorage.setItem('username', username);
                 this.username = username;
-                this.initChatBox();
-            }.bind(this)
+
+                this.__showChatBox();
+            }.bind(this);
 
             this.container.appendChild(btn);
-        }
+        };
 
-        Chat.prototype.initChatBox = function() {
+        /**
+         * 显示聊天框
+         * @private
+         */
+        Chat.prototype.__showChatBox = function() {
             var chatBox = document.createElement('div');
             chatBox.className = 'chat-box';
 
@@ -190,11 +221,11 @@
                 event = event || window.event;
                 var target = event.target || event.srcElement;
 
-                if(event.keyCode == 13 && !event.shiftKey && target.value) {
-                    this.send({content: target.value.trim()});
+                if(event.keyCode == 13 && !event.shiftKey && target.value.trim()) {
+                    this.__send({content: target.value.trim()});
                     target.value = '';
                 }
-            }.bind(this)
+            }.bind(this);
 
             chatBox.appendChild(messageBox);
             chatBox.appendChild(textInput);
@@ -203,10 +234,14 @@
             this.container.innerHTML = '';
             this.container.appendChild(chatBox);
 
-            this.connect();
-        }
+            this.__connect();
+        };
 
-        Chat.prototype.pushMessage = function(msg) {
+        /**
+         * 推一条消息到聊天框
+         * @param msg
+         */
+        Chat.prototype.__pushMessage = function(msg) {
             var item = document.createElement('div');
 
             if(msg.username == this.username)
@@ -227,12 +262,25 @@
 
             this.messageBox.appendChild(item);
             item.scrollIntoView();
-        }
+        };
 
-        Chat.prototype.send = function(message) {
+        /**
+         * 发送一条消息
+         * @param message
+         */
+        Chat.prototype.__send = function(message) {
             message.username = this.username;
 
-            var request = new XMLHttpRequest();
+            try {
+                var request = new XMLHttpRequest();
+            } catch(e1) {
+                try{
+                    var request = new ActiveXObject('Msxml2.XMLHTTP.6.0');
+                } catch(e2) {
+                    var request = new ActiveXObject('Msxml2.XMLHTTP.3.0');
+                }
+            }
+
             request.open('POST', '/chat');
             request.send(JSON.stringify(message));
 
@@ -241,27 +289,41 @@
                     //this.pushMessage(message);
                 }
             }.bind(this)
-        }
+        };
 
-        Chat.prototype.connect = function() {
-            var request = new XMLHttpRequest();
+        /**
+         * 建立长链接
+         */
+        Chat.prototype.__connect = function() {
+
+            try {
+                var request = new XMLHttpRequest();
+            } catch(e1) {
+                try{
+                    var request = new ActiveXObject('Msxml2.XMLHTTP.6.0');
+                } catch(e2) {
+                    var request = new ActiveXObject('Msxml2.XMLHTTP.3.0');
+                }
+            }
+
             request.open('GET', '/chat');
             request.send(null);
 
             request.onreadystatechange = function() {
-                if(request.readyState == 4 && request.status == 200) {
-                    var message = JSON.parse(request.responseText);
-                    this.pushMessage(message);
-                    this.connect();
+                if(request.readyState == 4) {
+                    if(request.status == 200) {
+                        var message = JSON.parse(request.responseText);
+                        this.__pushMessage(message);
+                    }
+
+                    //重新建立链接
+                    this.__connect();
                 }
             }.bind(this)
-        }
-
-
-
+        };
 
         var chat = new Chat(document.getElementsByClassName('container')[0]);
-        chat.init();
+        chat.startup();
     </script>
 </body>
 </html>
