@@ -1,0 +1,7 @@
+deploy:
+  script:
+    - mkdir -p /alidata/www/yeyuanfeng/chat
+    - cp -rf ../chat /alidata/www/yeyuanfeng
+    - cd /alidata/www/yeyuanfeng/chat
+    - npm install
+    - forever stop app.js || forever start app.js

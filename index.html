@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聊天室</title>
+
+    <style>
+        * {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            -ms-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+
+
+        .container {
+            display: block;
+            width: 400px;
+            margin: 0 auto;
+        }
+
+        .btn-start {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+
+            display: block;
+            height: 50px;
+
+            margin: 0;
+            padding: 0 40px;
+            border: none;
+            border-radius: 4px;
+            background: rgb(108, 204, 201);
+            outline: none;
+
+            transform: translate(-50%, -50%);
+
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-start:hover, .btn-start:active {
+            background: rgb(78, 174, 171);
+        }
+
+        .chat-box {
+            display: block;
+            width: 100%;
+
+            margin: 0 auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .message-box {
+            width: 100%;
+            height: 500px;
+            padding: 10px;
+            border-bottom: 1px solid #d7d7d7;
+            overflow-y: auto;
+        }
+
+        .message-box .message-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .message-box .message-item.right {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .message-box .message-item .username {
+            display: block;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .message-box .message-item .message {
+            position: relative;
+            display: block;
+            padding: 5px 10px;
+            border-radius: 5px;
+
+            font-size: 13px;
+            line-height: 16px;
+        }
+
+        .message-box .message-item.left .message {
+            margin-left: 10px;
+            border: 1px solid #d7d7d7;
+            background: rgb(248, 248, 248);
+        }
+
+        .message-box .message-item.right .message {
+            margin-right: 10px;
+            border: 1px solid rgb(167, 235, 102);
+            background: rgb(167, 235, 102);
+        }
+
+        .message-box .message-item.left .message:before, .message-box .message-item.right .message:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 5px;
+            height: 5px;
+            border: 1px solid;
+            border-radius: 1px;
+        }
+
+        .message-box .message-item.left .message:before {
+            left: 0px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            border-color:  transparent transparent #d7d7d7 #d7d7d7;
+            background: rgb(248, 248, 248);
+        }
+
+        .message-box .message-item.right .message:before {
+            right: 0px;
+            border: 1px solid rgb(167, 235, 102);
+            transform: translate(50%, -50%) rotate(45deg);
+            background: rgb(167, 235, 102);
+        }
+
+        .chat-box textarea {
+            display: block;
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            resize: none;
+            border: none;
+            background: transparent;
+            outline: none;
+
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container"></div>
+
+    <script>
+        function Chat(container) {
+            this.container = container;
+        }
+
+        Chat.prototype.init = function() {
+            var username = window.localStorage.getItem('username');
+            if(!username)
+                this.initGuidePage();
+            else {
+                this.username = username;
+                this.initChatBox();
+            }
+        }
+
+        Chat.prototype.initGuidePage = function() {
+            var btn = document.createElement('button');
+            btn.className = 'btn-start';
+            btn.innerHTML = '进入聊天室';
+
+            btn.onclick = function() {
+                var username = prompt('请输入用户名');
+                if(!username) {
+                    alert('用户名不能为空');
+                    return false;
+                }
+                window.localStorage.setItem('username', username);
+                this.username = username;
+                this.initChatBox();
+            }.bind(this)
+
+            this.container.appendChild(btn);
+        }
+
+        Chat.prototype.initChatBox = function() {
+            var chatBox = document.createElement('div');
+            chatBox.className = 'chat-box';
+
+            var messageBox = document.createElement('div');
+            messageBox.className = 'message-box';
+
+            var textInput = document.createElement('textarea');
+            textInput.setAttribute('placeholder', '请在这里输入聊天内容');
+            textInput.onkeyup = function(event) {
+                event = event || window.event;
+                var target = event.target || event.srcElement;
+
+                if(event.keyCode == 13 && !event.shiftKey && target.value) {
+                    this.send({content: target.value.trim()});
+                    target.value = '';
+                }
+            }.bind(this)
+
+            chatBox.appendChild(messageBox);
+            chatBox.appendChild(textInput);
+
+            this.messageBox = messageBox;
+            this.container.innerHTML = '';
+            this.container.appendChild(chatBox);
+
+            this.connect();
+        }
+
+        Chat.prototype.pushMessage = function(msg) {
+            var item = document.createElement('div');
+
+            if(msg.username == this.username)
+                item.className = 'message-item right';
+            else
+                item.className = 'message-item left';
+
+            var username = document.createElement('span');
+            username.className = 'username';
+            username.appendChild(document.createTextNode(msg.username || this.username));
+
+            var message = document.createElement('span');
+            message.className = 'message';
+            message.appendChild(document.createTextNode(msg.content));
+
+            item.appendChild(username);
+            item.appendChild(message);
+
+            this.messageBox.appendChild(item);
+            item.scrollIntoView();
+        }
+
+        Chat.prototype.send = function(message) {
+            message.username = this.username;
+
+            var request = new XMLHttpRequest();
+            request.open('POST', '/chat');
+            request.send(JSON.stringify(message));
+
+            request.onreadystatechange = function () {
+                if(request.readyState == 4 && request.status == 200) {
+                    //this.pushMessage(message);
+                }
+            }.bind(this)
+        }
+
+        Chat.prototype.connect = function() {
+            var request = new XMLHttpRequest();
+            request.open('GET', '/chat');
+            request.send(null);
+
+            request.onreadystatechange = function() {
+                if(request.readyState == 4 && request.status == 200) {
+                    var message = JSON.parse(request.responseText);
+                    this.pushMessage(message);
+                    this.connect();
+                }
+            }.bind(this)
+        }
+
+
+
+
+        var chat = new Chat(document.getElementsByClassName('container')[0]);
+        chat.init();
+    </script>
+</body>
+</html>
