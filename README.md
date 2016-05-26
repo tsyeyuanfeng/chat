@@ -8,4 +8,4 @@
 在浏览器输入http://localhost:3030进行访问
 
 ## 样例展示
-![样例图片](https://raw.githubusercontent.com/tsyeyuanfeng/single-option-evaluation/master/demo.png)
+![样例图片](https://raw.githubusercontent.com/tsyeyuanfeng/chat/master/demo.png)
